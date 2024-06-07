@@ -280,6 +280,9 @@ public class CodaEventDecoder {
             else if(node.getTag()==57636){
                 //  RICH TDC data
                 return this.getDataEntries_57636(crate, node, event);
+            } else if (node.getTag()==57655){
+                //  XY Hodoscope TDC data
+                return this.getDataEntries_57655(crate, node, event);
             } else if(node.getTag()==57641){
                 //  RTPC  data decoding
                 return this.getDataEntries_57641(crate, node, event);
@@ -1013,6 +1016,71 @@ public class CodaEventDecoder {
         return entries;
     }
 
+    /**
+     * Bank TAG=57655 used for XY Hodoscope TDC values
+     * @param crate
+     * @param node
+     * @param event
+     * @return
+     */
+    public List<DetectorDataDgtz>  getDataEntries_57655(Integer crate, EvioNode node, EvioDataEvent event){
+
+        ArrayList<DetectorDataDgtz>  entries = new ArrayList<>();
+
+        if(node.getTag()==57655){
+            try {
+
+                ByteBuffer     compBuffer = node.getByteData(true);
+                CompositeData  compData = new CompositeData(compBuffer.array(),event.getByteOrder());
+
+                List<DataType> cdatatypes = compData.getTypes();
+                List<Object>   cdataitems = compData.getItems();
+
+                if(cdatatypes.get(3) != DataType.NVALUE){
+                    System.err.println("[EvioRawDataSource] ** error ** corrupted "
+                    + " bank. tag = " + node.getTag() + " num = " + node.getNum());
+                    return null;
+                }
+
+                int position = 0;
+                while(position<cdatatypes.size()-4){
+                    Byte    slot = (Byte)     cdataitems.get(position+0);
+                    //Integer trig = (Integer)  cdataitems.get(position+1);
+                    //Long    time = (Long)     cdataitems.get(position+2);
+
+                    System.out.println("Crate = " + crate + "      Slot = " + slot);
+                    
+                    Integer nchannels = (Integer) cdataitems.get(position+3);
+                    position += 4;
+                    int counter  = 0;
+
+                    while(counter<nchannels){
+                        //Integer fiber = ((Byte) cdataitems.get(position))&0xFF;  // The Fiber information is present in RICH data, but for Hodoscope it is not needed
+                        Integer channel = ((Byte) cdataitems.get(position))&0xFF;
+                        Short rawtdc = (Short) cdataitems.get(position+1);
+                        int edge = (rawtdc>>15)&0x1;
+                        int tdc = rawtdc&0x7FFF;
+
+                        //System.out.println( "Channel = " + channel + "     rawtdc = " + rawtdc + "      edge is " + edge + "      tdc = " + tdc );
+                        
+                        DetectorDataDgtz bank = new DetectorDataDgtz(crate,slot.intValue(),2*channel + edge);
+                        bank.addTDC(new TDCData(tdc));
+
+                        entries.add(bank);
+                        position += 2;
+                        counter++;
+                    }
+                }
+
+                return entries;
+            } catch (EvioException ex) {
+                Logger.getLogger(CodaEventDecoder.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
+        return entries;
+    }
+    
+    
     public void getDataEntries_EPICS(EvioDataEvent event){
         epicsData = new JsonObject();
         List<EvioTreeBranch> branches = this.getEventBranches(event);
@@ -1291,7 +1359,7 @@ public class CodaEventDecoder {
 
     public static void main(String[] args){
         EvioSource reader = new EvioSource();
-        reader.open("/Users/devita/clas_004013.evio.1000");
+        reader.open("/cache/clas12/detectors/uRwell/2024_EEL_Hodo_And_uRwell/urwell_maroc_002064.evio.00000");
         CodaEventDecoder decoder = new CodaEventDecoder();
         DetectorEventDecoder detectorDecoder = new DetectorEventDecoder();
 
