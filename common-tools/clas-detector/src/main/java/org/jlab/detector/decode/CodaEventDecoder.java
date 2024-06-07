@@ -1030,6 +1030,8 @@ public class CodaEventDecoder {
         if(node.getTag()==57655){
             try {
 
+                //System.out.println("************ Beginning *************");
+                
                 ByteBuffer     compBuffer = node.getByteData(true);
                 CompositeData  compData = new CompositeData(compBuffer.array(),event.getByteOrder());
 
@@ -1048,11 +1050,14 @@ public class CodaEventDecoder {
                     //Integer trig = (Integer)  cdataitems.get(position+1);
                     //Long    time = (Long)     cdataitems.get(position+2);
 
-                    System.out.println("Crate = " + crate + "      Slot = " + slot);
                     
                     Integer nchannels = (Integer) cdataitems.get(position+3);
                     position += 4;
                     int counter  = 0;
+
+                    int PMT = 1 - slot%2; // PMT 0 ist the the one closest to low number bars, PMT 1 is the one close to high number bars
+                    
+                    System.out.println("Crate = " + crate + "      Slot = " + slot + "      nchannels = " + nchannels);
 
                     while(counter<nchannels){
                         //Integer fiber = ((Byte) cdataitems.get(position))&0xFF;  // The Fiber information is present in RICH data, but for Hodoscope it is not needed
@@ -1063,7 +1068,12 @@ public class CodaEventDecoder {
 
                         //System.out.println( "Channel = " + channel + "     rawtdc = " + rawtdc + "      edge is " + edge + "      tdc = " + tdc );
                         
-                        DetectorDataDgtz bank = new DetectorDataDgtz(crate,slot.intValue(),2*channel + edge);
+                        int MAROC_ID = channel/64;
+                        int MAROC_Channel = channel%64 + 1;
+                        
+                        int TT_Channel = 2*( channel - MAROC_ID*64 ) + edge; //
+                        
+                        DetectorDataDgtz bank = new DetectorDataDgtz(crate,slot.intValue(), TT_Channel );
                         bank.addTDC(new TDCData(tdc));
 
                         entries.add(bank);
@@ -1359,7 +1369,8 @@ public class CodaEventDecoder {
 
     public static void main(String[] args){
         EvioSource reader = new EvioSource();
-        reader.open("/cache/clas12/detectors/uRwell/2024_EEL_Hodo_And_uRwell/urwell_maroc_002064.evio.00000");
+        //reader.open("/cache/clas12/detectors/uRwell/2024_EEL_Hodo_And_uRwell/urwell_maroc_002064.evio.00000");
+        reader.open("/work/clas12/rafopar/Hodo/Data/urwell_maroc_002064.evio.00000");
         CodaEventDecoder decoder = new CodaEventDecoder();
         DetectorEventDecoder detectorDecoder = new DetectorEventDecoder();
 
