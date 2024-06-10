@@ -1057,7 +1057,7 @@ public class CodaEventDecoder {
 
                     int PMT = 1 - slot%2; // PMT 0 ist the the one closest to low number bars, PMT 1 is the one close to high number bars
                     
-                    System.out.println("Crate = " + crate + "      Slot = " + slot + "      nchannels = " + nchannels);
+                    //System.out.println("Crate = " + crate + "      Slot = " + slot + "      nchannels = " + nchannels);
 
                     while(counter<nchannels){
                         //Integer fiber = ((Byte) cdataitems.get(position))&0xFF;  // The Fiber information is present in RICH data, but for Hodoscope it is not needed
