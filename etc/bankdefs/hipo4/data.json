@@ -371,6 +371,19 @@
     ]
   },
   {
+    "name" : "XYHODO::tdc",
+    "group": 21850,
+    "item" : 13,
+    "info": "TDC bank for the XY 2 layer Hodoscope that uses the same PMTs as the RICH",
+    "entries":[
+      { "name":"sector"    , "type":"B", "info":"Identifies the detector: Currently there are two of them, 0 and 1"},
+      { "name":"layer"     , "type":"B", "info":"The detector layer: 0 = short bars, 1 = long bars, PMT channels that are not connected to any Scinitillator bars"},
+      { "name":"component" , "type":"S", "info":"Encodes in it the barID and the PMT: barID = component/2, PMT = component%2"},
+      { "name":"order"     , "type":"B", "info":"order: 0 = Rising edge, 1 = Falling edge"},
+      { "name":"TDC"       , "type":"I", "info":"TDC value"}
+    ]
+  },
+  {
     "name" : "RTPC::adc",
     "group": 21900,
     "item" : 11,
