@@ -44,12 +44,12 @@ public class CodaEventDecoder {
 
     private final long timeStampTolerance = 0L;
     private int tiMaster = -1;
-    
+
     /* 
     * From the maroc we get slot 0, 1, 2 etc, but in this crate the uRwell also has slots 0 to 15
     * We will add an offset value 20 for this data so the TT will be unique.
-    */
-    private final byte HodoSlotOffset = 20; 
+     */
+    private final byte HodoSlotOffset = 20;
 
     public CodaEventDecoder() {
 
@@ -80,7 +80,7 @@ public class CodaEventDecoder {
         List<EvioTreeBranch> branches = this.getEventBranches(event);
         this.setTimeStamp(event);
         for (EvioTreeBranch branch : branches) {
-            
+
             List<DetectorDataDgtz> list = this.getDataEntries(event, branch.getTag());
             if (list != null) {
                 rawEntries.addAll(list);
@@ -279,6 +279,8 @@ public class CodaEventDecoder {
                 combineList.addAll(this.getDataEntries_57655(crate, node, event));
             } else if (node.getTag() == 57631) {
                 combineList.addAll(this.getDataEntries_57631(crate, node, event));
+            } else if (node.getTag() == 57653) {
+                combineList.addAll(this.getDataEntries_57653(crate, node, event));
             }
 
         }
@@ -969,7 +971,6 @@ public class CodaEventDecoder {
                     }
 
                     //System.out.println(" HybridID = " + HybridID );
-                    
                     /**
                      * VERY Bad way of doing this, but this is just a temp
                      * solution to ignore GEM data from slots #12 and #13, as we
@@ -1120,6 +1121,106 @@ public class CodaEventDecoder {
 //            }
         }
         return entries;
+    }
+
+    /* 
+     * Decoding of VMM3 data, Format description at:
+     * https://clonwiki0.jlab.org/wiki/clondocs/Docs/vmm3_L0_data_format.pdf
+     */
+    public List<DetectorDataDgtz> getDataEntries_57653(Integer crate, EvioNode node, EvioDataEvent event) {
+
+        final Integer chip1Header = 3;
+        final Integer chip1Trailer = 4;
+        final Integer chip2Header = 5;
+        final Integer chip2Trailer = 6;
+
+        ArrayList<DetectorDataDgtz> entries = new ArrayList<>();
+
+        if (node.getTag() == 57653) {
+
+            int[] intBuff = node.getIntData();
+
+            for (int iBuf = 0; iBuf < intBuff.length; iBuf++) {
+
+                int type = intBuff[iBuf] >> 28;
+                
+                if (type == chip1Header || type == chip2Header) {
+                    iBuf = getVMM3Hits(crate, entries, intBuff, iBuf);
+                }
+
+            }
+        }
+
+        return entries;
+
+    }
+
+    public Integer getVMM3Hits(Integer crate, List<DetectorDataDgtz> entries, int[] intBuff, int iBuf) {
+
+        final Integer chip1Header = 3;
+        final Integer chip1Trailer = 4;
+        final Integer chip2Header = 5;
+        final Integer chip2Trailer = 6;
+
+        Integer slot = 30; // The raw data doesn't have any information about the slot. We will just hardcode a value, and also put in the TT
+
+        int type = intBuff[iBuf] >> 28;
+        int channelOffset = 0;
+
+        if (type == chip1Header) {
+            channelOffset = 0;
+        } else if (type == chip2Header) {
+            channelOffset = 64;
+        }else{
+            System.out.println("This is not a VMM Chip header. Exiting...");
+            System.exit(1);
+        }
+
+        int nHitMask = 16711680; // bits 23 to 16 are 1, the rest is 0 "111111110000000000000000"
+        int nChipHits = (intBuff[iBuf] & nHitMask)>>16;        
+
+        for (int iHit = 0; iHit < nChipHits; iHit++) {
+
+            Integer mask_relBCID = 7;           //bits 31-29
+            Integer mask_N = 1;                 // bit 28
+            Integer mask_TDC = 255;             // bits 27-20
+            Integer mask_ADC = 1023;            // bits 19-10
+            Integer mask_channel = 63;          // bits 9-4
+            Integer mask_T = 1;                 // bit 3
+            Integer mask_R = 1;                 // bit 2
+            Integer mask_P = 1;                 // bit 1          
+            
+            Integer channel = (intBuff[iBuf + iHit + 1]>>4) & mask_channel + channelOffset;
+            Integer adc = (intBuff[iBuf + iHit + 1]>>10) & mask_ADC;
+            Integer tdc = (intBuff[iBuf + iHit + 1]>>20) & mask_TDC;
+            Short relBCID = (short) ((intBuff[iBuf + iHit + 1]>> 29) & mask_relBCID );
+            Boolean N = (( (intBuff[iBuf + iHit + 1]>>28) & mask_N) != 0);
+            Boolean P = (( (intBuff[iBuf + iHit + 1] >> 1) & mask_P) != 0);
+            Boolean R = (( (intBuff[iBuf + iHit + 1]>>2) & mask_R) != 0);
+            Boolean T = (( (intBuff[iBuf + iHit + 1]>>3) & mask_T) != 0);
+
+            /*
+                        * Forming the PRTN,
+             */
+            Short PRTN = 0;
+            PRTN = (short) (N ? PRTN | 1 : PRTN);
+            PRTN = (short) (T ? PRTN | 1 << 1 : PRTN);
+            PRTN = (short) (R ? PRTN | 1 << 2 : PRTN);
+            PRTN = (short) (P ? PRTN | 1 << 3 : PRTN);
+            
+            ADCData adcData = new ADCData();
+            adcData.setIntegral(adc);
+            adcData.setTime(tdc);            
+            adcData.setHeight(relBCID);
+            adcData.setPedestal(PRTN);
+            
+            DetectorDataDgtz bank = new DetectorDataDgtz(crate, slot, channel);
+
+            bank.addADC(adcData);
+            entries.add(bank);
+        }
+
+        return iBuf + nChipHits + 1;
     }
 
     /**
@@ -1310,7 +1411,7 @@ public class CodaEventDecoder {
         ArrayList<DetectorDataDgtz> entries = new ArrayList<>();
 
         if (node.getTag() == 57655) {
-            try {                
+            try {
                 ByteBuffer compBuffer = node.getByteData(true);
                 CompositeData compData = new CompositeData(compBuffer.array(), event.getByteOrder());
 
@@ -1325,11 +1426,10 @@ public class CodaEventDecoder {
 
                 int position = 0;
                 while (position < cdatatypes.size() - 4) {
-                    Integer slot = (Byte) (cdataitems.get(position + 0)) + this.HodoSlotOffset ;                  
-                    
+                    Integer slot = (Byte) (cdataitems.get(position + 0)) + this.HodoSlotOffset;
+
                     //Integer trig = (Integer)  cdataitems.get(position+1);
                     //Long    time = (Long)     cdataitems.get(position+2);
-
                     Integer nchannels = (Integer) cdataitems.get(position + 3);
                     position += 4;
                     int counter = 0;
@@ -1592,7 +1692,8 @@ public class CodaEventDecoder {
         //reader.open("/Users/devita/clas_004013.evio.1000");
         //reader.open("/work/clas12/rafopar/uRWELL/Readout/APV25/urwell_001534.evio.00000");
         //reader.open("/work/clas12/rafopar/uRWELL/Readout/APV25/urwell_001576.evio.00000");
-        reader.open("/cache/clas12/detectors/uRwell/2024_EEL_Hodo_And_uRwell/urwell_maroc_002151.evio.00000");
+        //reader.open("/cache/clas12/detectors/uRwell/2024_EEL_Hodo_And_uRwell/urwell_maroc_002151.evio.00000");
+        reader.open("/work/clas12/rafopar/uRWELL/Readout/VMM3/vmm_000112.evio.00000");
         //reader.open("/work/clas12/rafopar/uRWELL/Readout/APV25/urwell_001326.evio.00000");
         CodaEventDecoder decoder = new CodaEventDecoder();
         DetectorEventDecoder detectorDecoder = new DetectorEventDecoder();

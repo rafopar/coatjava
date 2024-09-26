@@ -171,6 +171,7 @@ public class CLASDecoder4 {
             List<DetectorDataDgtz> entries) {
         List<DetectorDataDgtz> adc = new ArrayList<>();
         for (DetectorDataDgtz entry : entries) {
+            
             if (entry.getDescriptor().getType() == type) {
                 if (entry.getADCSize() > 0 && entry.getTDCSize() == 0) {
                     adc.add(entry);
@@ -271,12 +272,13 @@ public class CLASDecoder4 {
             bankSize = adcDGTZ.size() * adcDGTZ.get(0).getADCSize();
         }
 
-        Bank adcBANK = new Bank(schemaFactory.getSchema(name), bankSize);
+        Bank adcBANK = new Bank(schemaFactory.getSchema(name), bankSize);      
 
         int uRwell_ind = 0;
         for (int i = 0; i < adcDGTZ.size(); i++) {
 
-            if (name != "URWELL::adc") {
+            //System.out.println("name = " + name);
+            if (name != "URWELL::adc" && name != "VMM3::adc") {
                 adcBANK.putByte("sector", i, (byte) adcDGTZ.get(i).getDescriptor().getSector());
                 adcBANK.putByte("layer", i, (byte) adcDGTZ.get(i).getDescriptor().getLayer());
                 adcBANK.putShort("component", i, (short) adcDGTZ.get(i).getDescriptor().getComponent());
@@ -286,7 +288,7 @@ public class CLASDecoder4 {
                 adcBANK.putFloat("time", i, (float) adcDGTZ.get(i).getADCData(0).getTime());
                 adcBANK.putShort("ped", i, (short) adcDGTZ.get(i).getADCData(0).getPedestal());
             }
-            
+
             if (name == "BST::adc") {
                 adcBANK.putLong("timestamp", i, adcDGTZ.get(i).getADCData(0).getTimeStamp());
             }
@@ -315,6 +317,13 @@ public class CLASDecoder4 {
 
                     uRwell_ind = uRwell_ind + 1;
                 }
+            }
+            if (name == "VMM3::adc") {
+                adcBANK.putShort("component", i, (short) adcDGTZ.get(i).getDescriptor().getComponent());
+                adcBANK.putShort("ADC", i, (short) adcDGTZ.get(i).getADCData(0).getIntegral());
+                adcBANK.putShort("TDC", i, (short) adcDGTZ.get(i).getADCData(0).getTimeCourse());
+                adcBANK.putByte("relBCID", i, (byte) adcDGTZ.get(i).getADCData(0).getHeight());
+                adcBANK.putByte("PRTN", i, (byte) adcDGTZ.get(i).getADCData(0).getPedestal());
             }
         }
 
@@ -468,14 +477,14 @@ public class CLASDecoder4 {
 
         String[] adcBankNames = new String[]{"FTOF::adc", "ECAL::adc", "FTCAL::adc", "FTHODO::adc", "FTTRK::adc",
             "HTCC::adc", "BST::adc", "CTOF::adc", "CND::adc", "LTCC::adc", "BMT::adc",
-            "FMT::adc", "HEL::adc", "RF::adc", "BAND::adc", "RASTER::adc", "URWELL::adc"};
+            "FMT::adc", "HEL::adc", "RF::adc", "BAND::adc", "RASTER::adc", "URWELL::adc", "VMM3::adc"};
         DetectorType[] adcBankTypes = new DetectorType[]{DetectorType.FTOF, DetectorType.ECAL, DetectorType.FTCAL, DetectorType.FTHODO, DetectorType.FTTRK,
             DetectorType.HTCC, DetectorType.BST, DetectorType.CTOF, DetectorType.CND, DetectorType.LTCC, DetectorType.BMT,
-            DetectorType.FMT, DetectorType.HEL, DetectorType.RF, DetectorType.BAND, DetectorType.RASTER, DetectorType.URWELL};
+            DetectorType.FMT, DetectorType.HEL, DetectorType.RF, DetectorType.BAND, DetectorType.RASTER, DetectorType.URWELL, DetectorType.VMM3TEST};
 
         String[] tdcBankNames = new String[]{"FTOF::tdc", "ECAL::tdc", "DC::tdc", "HTCC::tdc", "LTCC::tdc", "CTOF::tdc", "CND::tdc", "RF::tdc", "RICH::tdc", "BAND::tdc", "XYHODO::tdc"};
         DetectorType[] tdcBankTypes = new DetectorType[]{DetectorType.FTOF, DetectorType.ECAL,
-            DetectorType.DC, DetectorType.HTCC, DetectorType.LTCC, DetectorType.CTOF, DetectorType.CND, DetectorType.RF, DetectorType.RICH, DetectorType.BAND, DetectorType.XYHODO };
+            DetectorType.DC, DetectorType.HTCC, DetectorType.LTCC, DetectorType.CTOF, DetectorType.CND, DetectorType.RF, DetectorType.RICH, DetectorType.BAND, DetectorType.XYHODO};
 
         for (int i = 0; i < adcBankTypes.length; i++) {
             Bank adcBank = getDataBankADC(adcBankNames[i], adcBankTypes[i]);
