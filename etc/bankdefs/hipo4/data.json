@@ -551,7 +551,9 @@
     "entries":[
       { "name":"component" , "type":"S", "info":"strip, should have values from 1 to 128"},
       { "name":"ADC"       , "type":"S", "info":"ADC Value, 0 to 1023"},
-      { "name":"TDC"       , "type":"B", "info":"TDC value, 0 to 255"}
+      { "name":"TDC"       , "type":"S", "info":"TDC value, 0 to 255"},
+      { "name":"relBCID"   , "type":"B", "info":"relative BCID"},
+      { "name":"PRTN"      , "type":"B", "info":"Bit0->N, Bit1->T, Bit2->R, and Bit3->P"}
     ]
   },      
   {
