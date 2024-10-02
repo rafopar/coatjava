@@ -1143,7 +1143,7 @@ public class CodaEventDecoder {
             for (int iBuf = 0; iBuf < intBuff.length; iBuf++) {
 
                 int type = intBuff[iBuf] >> 28;
-                
+
                 if (type == chip1Header || type == chip2Header) {
                     iBuf = getVMM3Hits(crate, entries, intBuff, iBuf);
                 }
@@ -1171,13 +1171,13 @@ public class CodaEventDecoder {
             channelOffset = 0;
         } else if (type == chip2Header) {
             channelOffset = 64;
-        }else{
+        } else {
             System.out.println("This is not a VMM Chip header. Exiting...");
             System.exit(1);
         }
 
         int nHitMask = 16711680; // bits 23 to 16 are 1, the rest is 0 "111111110000000000000000"
-        int nChipHits = (intBuff[iBuf] & nHitMask)>>16;        
+        int nChipHits = (intBuff[iBuf] & nHitMask) >> 16;
 
         for (int iHit = 0; iHit < nChipHits; iHit++) {
 
@@ -1189,15 +1189,15 @@ public class CodaEventDecoder {
             Integer mask_T = 1;                 // bit 3
             Integer mask_R = 1;                 // bit 2
             Integer mask_P = 1;                 // bit 1          
-            
-            Integer channel = (intBuff[iBuf + iHit + 1]>>4) & mask_channel + channelOffset;
-            Integer adc = (intBuff[iBuf + iHit + 1]>>10) & mask_ADC;
-            Integer tdc = (intBuff[iBuf + iHit + 1]>>20) & mask_TDC;
-            Short relBCID = (short) ((intBuff[iBuf + iHit + 1]>> 29) & mask_relBCID );
-            Boolean N = (( (intBuff[iBuf + iHit + 1]>>28) & mask_N) != 0);
-            Boolean P = (( (intBuff[iBuf + iHit + 1] >> 1) & mask_P) != 0);
-            Boolean R = (( (intBuff[iBuf + iHit + 1]>>2) & mask_R) != 0);
-            Boolean T = (( (intBuff[iBuf + iHit + 1]>>3) & mask_T) != 0);
+
+            Integer channel = (intBuff[iBuf + iHit + 1] >> 4) & mask_channel + channelOffset;
+            Integer adc = (intBuff[iBuf + iHit + 1] >> 10) & mask_ADC;
+            Integer tdc = (intBuff[iBuf + iHit + 1] >> 20) & mask_TDC;
+            Short relBCID = (short) ((intBuff[iBuf + iHit + 1] >> 29) & mask_relBCID);
+            Boolean N = (((intBuff[iBuf + iHit + 1] >> 28) & mask_N) != 0);
+            Boolean P = (((intBuff[iBuf + iHit + 1] >> 1) & mask_P) != 0);
+            Boolean R = (((intBuff[iBuf + iHit + 1] >> 2) & mask_R) != 0);
+            Boolean T = (((intBuff[iBuf + iHit + 1] >> 3) & mask_T) != 0);
 
             /*
                         * Forming the PRTN,
@@ -1207,13 +1207,13 @@ public class CodaEventDecoder {
             PRTN = (short) (T ? PRTN | 1 << 1 : PRTN);
             PRTN = (short) (R ? PRTN | 1 << 2 : PRTN);
             PRTN = (short) (P ? PRTN | 1 << 3 : PRTN);
-            
+
             ADCData adcData = new ADCData();
             adcData.setIntegral(adc);
-            adcData.setTime(tdc);            
+            adcData.setTime(tdc);
             adcData.setHeight(relBCID);
             adcData.setPedestal(PRTN);
-            
+
             DetectorDataDgtz bank = new DetectorDataDgtz(crate, slot, channel);
 
             bank.addADC(adcData);
