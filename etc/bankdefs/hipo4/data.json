@@ -371,6 +371,19 @@
     ]
   },
   {
+    "name" : "XYHODO::tdc",
+    "group": 21850,
+    "item" : 13,
+    "info": "TDC bank for the XY 2 layer Hodoscope that uses the same PMTs as the RICH",
+    "entries":[
+      { "name":"sector"    , "type":"B", "info":"Identifies the detector: Currently there are two of them, 0 and 1"},
+      { "name":"layer"     , "type":"B", "info":"The detector layer: 0 = short bars, 1 = long bars, PMT channels that are not connected to any Scinitillator bars"},
+      { "name":"component" , "type":"S", "info":"Encodes in it the barID and the PMT: barID = component/2, PMT = component%2"},
+      { "name":"order"     , "type":"B", "info":"order: 0 = Rising edge, 1 = Falling edge"},
+      { "name":"TDC"       , "type":"I", "info":"TDC value"}
+    ]
+  },
+  {
     "name" : "RTPC::adc",
     "group": 21900,
     "item" : 11,
@@ -515,7 +528,7 @@
       { "name":"ped"       , "type":"S", "info":"pedestal from pulse analysis"}
     ]
   },
-{
+  {
     "name" : "URWELL::adc",
     "group": 22300,
     "item" : 11,
@@ -529,7 +542,20 @@
       { "name":"time"      , "type":"F", "info":"time"},
       { "name":"ped"       , "type":"S", "info":"pedestal from pulse analysis"}
     ]
-  },  
+  },
+  {
+    "name" : "VMM3::adc",
+    "group": 22350,
+    "item" : 12,
+    "info": "ADC bank for the VMM3, Test bank, can be changed later",
+    "entries":[
+      { "name":"component" , "type":"S", "info":"strip, should have values from 1 to 128"},
+      { "name":"ADC"       , "type":"S", "info":"ADC Value, 0 to 1023"},
+      { "name":"TDC"       , "type":"S", "info":"TDC value, 0 to 255"},
+      { "name":"relBCID"   , "type":"B", "info":"relative BCID"},
+      { "name":"PRTN"      , "type":"B", "info":"Bit0->N, Bit1->T, Bit2->R, and Bit3->P"}
+    ]
+  },      
   {
     "name" : "RAW::adc",
     "group": 20000,

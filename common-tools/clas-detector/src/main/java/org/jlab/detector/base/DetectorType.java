@@ -29,6 +29,8 @@ public enum DetectorType {
     BAND      (21, "BAND"),
     RASTER    (22, "RASTER"),
     URWELL    (23, "URWELL"),
+    XYHODO    (24, "XYHODO"),
+    VMM3TEST  (222, "VMM3TEST"),
     TARGET    (100, "TARGET"),
     MAGNETS   (101, "MAGNETS"),
     ECIN      (110, "ECIN"),
