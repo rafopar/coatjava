@@ -1190,15 +1190,31 @@ public class CodaEventDecoder {
             Integer mask_R = 1;                 // bit 2
             Integer mask_P = 1;                 // bit 1          
 
-            Integer channel = (intBuff[iBuf + iHit + 1] >> 4) & mask_channel + channelOffset;
-            Integer adc = (intBuff[iBuf + iHit + 1] >> 10) & mask_ADC;
-            Integer tdc = (intBuff[iBuf + iHit + 1] >> 20) & mask_TDC;
-            Short relBCID = (short) ((intBuff[iBuf + iHit + 1] >> 29) & mask_relBCID);
-            Boolean N = (((intBuff[iBuf + iHit + 1] >> 28) & mask_N) != 0);
-            Boolean P = (((intBuff[iBuf + iHit + 1] >> 1) & mask_P) != 0);
-            Boolean R = (((intBuff[iBuf + iHit + 1] >> 2) & mask_R) != 0);
-            Boolean T = (((intBuff[iBuf + iHit + 1] >> 3) & mask_T) != 0);
+//            Integer channel = (intBuff[iBuf + iHit + 1] >> 4) & mask_channel + channelOffset;
+//            Integer adc = (intBuff[iBuf + iHit + 1] >> 10) & mask_ADC;
+//            Integer tdc = (intBuff[iBuf + iHit + 1] >> 20) & mask_TDC;
+//            Short relBCID = (short) ((intBuff[iBuf + iHit + 1] >> 29) & mask_relBCID);
+//            Boolean N = (((intBuff[iBuf + iHit + 1] >> 28) & mask_N) != 0);
+//            Boolean P = (((intBuff[iBuf + iHit + 1] >> 1) & mask_P) != 0);
+//            Boolean R = (((intBuff[iBuf + iHit + 1] >> 2) & mask_R) != 0);
+//            Boolean T = (((intBuff[iBuf + iHit + 1] >> 3) & mask_T) != 0);
 
+
+
+            Integer channel = ((intBuff[iBuf + iHit + 1] >> 22) & mask_channel) + channelOffset;  // d
+            Integer adc = (intBuff[iBuf + iHit + 1] >> 12) & mask_ADC;           // d   
+            Integer tdc = (intBuff[iBuf + iHit + 1] >> 4) & mask_TDC;            // d
+            Short relBCID = (short) ((intBuff[iBuf + iHit + 1]) & mask_relBCID); // d
+            Boolean N = (((intBuff[iBuf + iHit + 1] >> 3) & mask_N) != 0);       // d
+            Boolean P = (((intBuff[iBuf + iHit + 1] >> 30) & mask_P) != 0);      // d
+            Boolean R = (((intBuff[iBuf + iHit + 1] >> 29) & mask_R) != 0);      // d
+            Boolean T = (((intBuff[iBuf + iHit + 1] >> 28) & mask_T) != 0);      // d
+
+            
+            
+            
+            //System.out.println("The word is " + Integer.toBinaryString( intBuff[iBuf + iHit + 1] )  + "    Channel is " + channel + "   Type = " + type + "  Offset = " + channelOffset );
+            
             /*
                         * Forming the PRTN,
              */
