@@ -924,8 +924,7 @@ public class CodaEventDecoder {
         final int n_APV_CH = 128;
         ArrayList<DetectorDataDgtz> entries = new ArrayList<>();
 
-        if (node.getTag()
-                == 57631) {
+        if (node.getTag() == 57631) {
 
             /**
              * Note: this is made for decoding only SRS-APV data from uRWELL
@@ -1034,7 +1033,7 @@ public class CodaEventDecoder {
              */
             /**
              * Loop over data for all Hybrids. The key of the map represents the
-             * HybridID, and the value of the map is anr ArrayList representing
+             * HybridID, and the value of the map is an ArrayList representing
              * the APV data of the given Hybrid
              */
             for (Map.Entry<Short, ArrayList<Short>> entry : m_APV.entrySet()) {
@@ -1198,9 +1197,6 @@ public class CodaEventDecoder {
 //            Boolean P = (((intBuff[iBuf + iHit + 1] >> 1) & mask_P) != 0);
 //            Boolean R = (((intBuff[iBuf + iHit + 1] >> 2) & mask_R) != 0);
 //            Boolean T = (((intBuff[iBuf + iHit + 1] >> 3) & mask_T) != 0);
-
-
-
             Integer channel = ((intBuff[iBuf + iHit + 1] >> 22) & mask_channel) + channelOffset;  // d
             Integer adc = (intBuff[iBuf + iHit + 1] >> 12) & mask_ADC;           // d   
             Integer tdc = (intBuff[iBuf + iHit + 1] >> 4) & mask_TDC;            // d
@@ -1210,11 +1206,7 @@ public class CodaEventDecoder {
             Boolean R = (((intBuff[iBuf + iHit + 1] >> 29) & mask_R) != 0);      // d
             Boolean T = (((intBuff[iBuf + iHit + 1] >> 28) & mask_T) != 0);      // d
 
-            
-            
-            
             //System.out.println("The word is " + Integer.toBinaryString( intBuff[iBuf + iHit + 1] )  + "    Channel is " + channel + "   Type = " + type + "  Offset = " + channelOffset );
-            
             /*
                         * Forming the PRTN,
              */
