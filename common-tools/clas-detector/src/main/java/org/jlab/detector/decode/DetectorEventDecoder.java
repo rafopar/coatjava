@@ -82,7 +82,7 @@ public class DetectorEventDecoder {
     public final void initDecoder(){
         keysTrans = Arrays.asList(new String[]{
 		/*"FTCAL","FTHODO","FTTRK","LTCC","ECAL","FTOF","HTCC","DC","CTOF","CND","BST","RF","BMT","FMT","RICH","HEL","BAND","RTPC","RASTER",*/
-            "URWELL","XYHODO", "VMM3TEST"
+            "URWELL","XYHODO", "VMM3TEST", "URWELLAPD"
         });
 
         tablesTrans = Arrays.asList(new String[]{
@@ -90,7 +90,7 @@ public class DetectorEventDecoder {
             "/daq/tt/ec","/daq/tt/ftof","/daq/tt/htcc","/daq/tt/dc","/daq/tt/ctof","/daq/tt/cnd","/daq/tt/svt",
             "/daq/tt/rf","/daq/tt/bmt","/daq/tt/fmt","/daq/tt/rich2","/daq/tt/hel","/daq/tt/band","/daq/tt/rtpc",
             "/daq/tt/raster", */ /*"/daq/tt/clasdev/urwell"*/ /*"/daq/tt/clasdev/urwellWithGEM"*/ 
-            "/daq/tt/clasdev/urwellWithLdrdGem","/daq/tt/clasdev/Hodo", "/daq/tt/clasdev/VVM3Test"
+            "/daq/tt/clasdev/urwellWithLdrdGem","/daq/tt/clasdev/Hodo", "/daq/tt/clasdev/VVM3Test", "/daq/tt/clasdev/urwellApdVME"
         });
 
         translationManager.init(keysTrans,tablesTrans);

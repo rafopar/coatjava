@@ -281,6 +281,8 @@ public class CodaEventDecoder {
                 combineList.addAll(this.getDataEntries_57631(crate, node, event));
             } else if (node.getTag() == 57653) {
                 combineList.addAll(this.getDataEntries_57653(crate, node, event));
+            } else if (node.getTag() == 57664) {
+                combineList.addAll(this.getDataEntries_57664(crate, node, event));
             }
 
         }
@@ -1122,6 +1124,238 @@ public class CodaEventDecoder {
         return entries;
     }
 
+    public List<DetectorDataDgtz> getDataEntries_57664(Integer crate, EvioNode node, EvioDataEvent event) {
+
+        final int n_APV_CH = 128;
+        ArrayList<DetectorDataDgtz> entries = new ArrayList<>();
+
+        int mpd_id = 0;
+        short adc_ch = 0;
+
+        if (node.getTag() == 57664) {
+            /**
+             * Note: this is made for decoding only VME-APV data for the LDRD
+             * uRwell prototypes.
+             *
+             * The decoding algorithm was borrowed from the repository below,
+             * and in particular from the given file
+             * https://github.com/xbai0624/mpd_baseline_evaluation/blob/hb_quick_check/src/MPDVMERawEventDecoder.cpp
+             */
+
+            Map<Short, ArrayList<Short>> m_APV = new HashMap<>();
+            int[] intBuff = node.getIntData();
+
+            //System.out.println("Data length = " + intBuff.length);
+
+            for (int idata = 0; idata < intBuff.length; idata++) {
+
+                int data_word = intBuff[idata];
+                MPD_VME_Raw_Data_Word word = new MPD_VME_Raw_Data_Word(data_word);
+
+                switch (word.type) {
+
+                    case Block_Header:
+                        mpd_id = word.mpd_id;
+                        break;
+                    case Block_Trailer:
+                        break;
+                    case Event_Header:
+                        break;
+                    case Trigger_Time:
+                        /*
+                        * For now we will skip this, leter we might need
+                        * to extract the trigger time
+                         */
+                        break;
+                    case APV_Ch_Data:
+                        switch (word.apv_ch_data_info) {
+
+                            case APV_Header:
+                                adc_ch = (short) word.adc_ch; // Kind of equivalent of the HybridID in SRS
+
+                                //     System.out.println("adc_ch      = " + adc_ch + "    idata = " + idata);
+                                if (!m_APV.containsKey(adc_ch)) {
+                                    m_APV.put(adc_ch, new ArrayList<>());
+                                }
+                                break;
+                            case ADC_Value:
+                                // Add to the corresponding vactor/map whatsowever
+                                m_APV.get(adc_ch).add(word.adc);
+                                //     System.out.println("*** index = " + m_APV.get(adc_ch).size() + "    ADC = " + word.adc);
+                                break;
+                            case APV_Trailer:
+                                // Check what exactly the trailer is
+                                m_APV.get(adc_ch).add(word.apv_trailer);
+                                //     System.out.println("APV trailer " + word.apv_trailer + "   idata = " + idata);
+                                break;
+                            case Trailer:
+                                // Do nothing
+                                break;
+                            default:
+                                break;
+
+                        }
+                    case Event_Trailer:
+                        // To be filled ater
+                        break;
+                    case Crate_Id:
+                        break;
+                    case Filler_Word:
+                        break;
+                    default:
+                        break;
+                }
+            }
+
+            /*
+            * The bank is read out. and for each APV card ADC values and the trailer is filled.
+            * Now for each APV card we will loop over it's entries and from it will extract ADC data for
+             * each channel and time sample. Then for each (Channel, time
+             * sample) will create DetectorDataDgtz bank, and fill corresponding
+             * ts and ADC.
+             *
+             * Here we don't use pedestal. The time sample will be assigned to
+             * pedestal
+             */
+            for (Map.Entry<Short, ArrayList<Short>> entry : m_APV.entrySet()) {
+
+                ArrayList<Short> cur_APV = entry.getValue();
+                Short slot = entry.getKey(); // Here slot is the same as the adc_ch ( HybridID in the case of SRS )
+
+                DetectorDataDgtz[] bank = new DetectorDataDgtz[n_APV_CH];
+                for (int ich = 0; ich < n_APV_CH; ich++) {
+                    bank[ich] = new DetectorDataDgtz(crate, slot.intValue(), ich);                    
+                }
+
+                Short ts = 0; // ts = Time Sample
+                for (int i_apv = 0; i_apv < cur_APV.size(); i_apv++) {
+
+                    // The APV data looks the following way
+                    // ADC_0 ADC_1 ... ADC_126 ADC_127 Trailer ADC_0 ADC_1 ... ADC_126 ADC_127 Trailer ADC_0 ADC_1 ... ADC_126 ADC_127 Trailer ADC_0...
+                    // | **** First time Sample **** |   ts    | **** Second time Sample ****|    ts   | **** Third time Sample **** |    ts   | **** Forth time Sample **** | ...
+                    // *
+                    // *
+                    // Will determine the common mode here
+                    // Will used the i_apvTmp to loop over cur_APV elements, and determine the common mode.
+                    int i_apvTmp = i_apv;
+
+                    double cmnMode = 0;
+
+                    ArrayList<Integer> tmpList = new ArrayList<Integer>();
+                    for (int ich = 0; ich < n_APV_CH; ich++) {
+                        tmpList.add((int) cur_APV.get(i_apvTmp));
+                        i_apvTmp = i_apvTmp + 1;
+                    }
+
+                    Collections.sort(tmpList);
+                    for (int ich = 5; ich < tmpList.size(); ich++) {
+                        cmnMode = cmnMode + tmpList.get(ich);
+                    }
+                    cmnMode = cmnMode / ((double) (tmpList.size() - 5));
+
+                    for (int ich = 0; ich < n_APV_CH; ich++) {
+                        //DetectorDataDgtz bank = new DetectorDataDgtz(crate, slot.intValue(), ich);
+
+                        ADCData adcData = new ADCData();
+                        adcData.setIntegral((int) (cur_APV.get(i_apv) - cmnMode));
+                        adcData.setPedestal(ts);
+                        bank[ich].addADC(adcData);
+
+                        i_apv = i_apv + 1;
+                    }
+                    //System.out.println("ts = " + ts + "      i_apv = " + i_apv + "    APV = " + cur_APV.get(i_apv) + "   cmn mode = " + cmnMode);
+                    ts++;
+                }
+                for (int ich = 0; ich < n_APV_CH; ich++) {
+                    entries.add(bank[ich]);
+                }
+
+            }
+        }
+        return entries;
+    }
+
+    public class MPD_VME_Raw_Data_Word {
+
+        MPD_VME_Raw_Data_Type type;
+        int mpd_id;
+        APV_Ch_Data_Info apv_ch_data_info;
+        int adc_ch;
+        short adc;
+        short apv_trailer;
+        int crate_id;
+
+        public MPD_VME_Raw_Data_Word(Integer word) {
+            type = MPD_VME_Raw_Data_Type.fromValue((word & 0x00E00000) >>> 21);
+            mpd_id = (word & 0x001F0000) >>> 16;
+            apv_ch_data_info = APV_Ch_Data_Info.fromValue((word & 0x00180000) >>> 19);
+            adc_ch = (word & 0xF);
+            adc = (short) (word & 0xFFF);
+            apv_trailer = (short) ((word & 0xF00) >>> 8);
+            crate_id = (word & 0xFF);
+        }
+
+    }
+
+    public enum APV_Ch_Data_Info {
+        APV_Header(0),
+        ADC_Value(1),
+        APV_Trailer(2),
+        Trailer(3),
+        Undefined(-1); // or auto assign
+
+        private final int value;
+
+        APV_Ch_Data_Info(int value) {
+            this.value = value;
+        }
+
+        public int getValue() {
+            return value;
+        }
+
+        public static APV_Ch_Data_Info fromValue(int value) {
+            for (APV_Ch_Data_Info t : values()) {
+                if (t.value == value) {
+                    return t;
+                }
+            }
+            throw new IllegalArgumentException("Unknown value: " + value);
+        }
+    }
+
+    public enum MPD_VME_Raw_Data_Type {
+        Block_Header(0x0),
+        Block_Trailer(0x1),
+        Event_Header(0x2),
+        Trigger_Time(0x3),
+        APV_Ch_Data(0x4),
+        Event_Trailer(0x5),
+        Crate_Id(0x6),
+        Filler_Word(0x7),
+        Undefined(-1);
+
+        private final int value;
+
+        MPD_VME_Raw_Data_Type(int value) {
+            this.value = value;
+        }
+
+        public int getValue() {
+            return value;
+        }
+
+        public static MPD_VME_Raw_Data_Type fromValue(int value) {
+            for (MPD_VME_Raw_Data_Type t : values()) {
+                if (t.value == value) {
+                    return t;
+                }
+            }
+            throw new IllegalArgumentException("Unknown value: " + value);
+        }
+
+    }
+
     /* 
      * Decoding of VMM3 data, Format description at:
      * https://clonwiki0.jlab.org/wiki/clondocs/Docs/vmm3_L0_data_format.pdf
@@ -1698,10 +1932,7 @@ public class CodaEventDecoder {
 
         EvioSource reader = new EvioSource();
         //reader.open("/Users/devita/clas_004013.evio.1000");
-        //reader.open("/work/clas12/rafopar/uRWELL/Readout/APV25/urwell_001534.evio.00000");
-        //reader.open("/work/clas12/rafopar/uRWELL/Readout/APV25/urwell_001576.evio.00000");
-        //reader.open("/cache/clas12/detectors/uRwell/2024_EEL_Hodo_And_uRwell/urwell_maroc_002151.evio.00000");
-        reader.open("/work/clas12/rafopar/uRWELL/Readout/VMM3/vmm_000112.evio.00000");
+        reader.open("/work/clas12/rafopar/uRWELL/Readout/mpd/ldrd_002918.evio.00000");
         //reader.open("/work/clas12/rafopar/uRWELL/Readout/APV25/urwell_001326.evio.00000");
         CodaEventDecoder decoder = new CodaEventDecoder();
         DetectorEventDecoder detectorDecoder = new DetectorEventDecoder();
